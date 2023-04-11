@@ -1,0 +1,65 @@
+- name: 'ping hosts'
+  become: true
+  hosts: db_and_web_server1, db_and_web_server2
+  tasks:
+    - name: 'Python install'
+      yum:
+        name: "{{ item }}"
+        state: installed
+      with_items:
+           - python
+           - epel-release
+           - python-setuptools
+           - python-devel
+           - python3-pip
+           - MySQL-python
+    - name: Download and install MySQL repository package
+      yum:
+         name: http://repo.mysql.com/mysql-community-release-el7-5.noarch.rpm
+         state: present
+         
+
+    
+        
+
+    - name: Install MySQL Server
+      yum:
+          name: mysql-server
+          state: present
+    
+    - name: Install MySQL Server
+      yum:
+          name: mysql-devel
+          state: present
+      
+
+    - name: Start MySQL service
+      service:
+           name: mysqld
+           state: started
+           enabled: yes
+    - name: Create App DB 
+      mysql_db:
+         name: employee_db
+         state: present
+    - name: Create DB user
+      mysql_user:
+         name: db_user
+         password: Passw0rd
+         priv: '*.*:ALL'
+         state: present    
+    - name: Install required Python libraries
+      pip:
+        name: "{{ item }}"
+        state: present
+        executable: pip3
+      with_items:
+        - "flask"
+        - "flask-mysql"
+    - name: Copy source code
+      copy:
+        src: app.py
+        dest: /opt/app.py
+
+    - name: Start web server
+      shell: FLASK_APP=/opt/app.py nohup flask run --host=0.0.0.0 &
